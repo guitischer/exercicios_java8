@@ -1,6 +1,7 @@
 package com.exercicios.bancario.exercicios;
 
 import java.util.List;
+import java.util.OptionalDouble;
 
 import com.exercicios.bancario.entity.Account;
 import com.exercicios.bancario.entity.Client;
@@ -25,11 +26,11 @@ public class Exercicios {
 	 */
 	public static void main(String[] args) {
 
-		imprimirNomesClientes();
-		//imprimirMediaSaldos();
-		//imprimirPaisClienteMaisRico();
-		//imprimirSaldoMedio(1);
-		//imprimirClientesComPoupanca();
+		// imprimirNomesClientes();
+		// imprimirMediaSaldos();
+		// imprimirPaisClienteMaisRico();
+		// imprimirSaldoMedio(1);
+		// imprimirClientesComPoupanca();
 		//getEstadoClientes(1);
 		//getNumerosContas("Brazil");
 		//getMaiorSaldo("client4@bank.com");
@@ -48,7 +49,7 @@ public class Exercicios {
 	 * Victor Lira - vl@cin.ufpe.br
 	 */
 	public static void imprimirNomesClientes() {
-		
+		service.listClients().stream().map((client) -> client.getName()+" - "+client.getEmail()).distinct().forEach((System.out::println));
 	}
 
 	/**
@@ -56,15 +57,41 @@ public class Exercicios {
 	 * Victor Lira - 352
 	 */
 	public static void imprimirMediaSaldos() {
-		
-	}
+		service.listClients().stream().forEach(client -> {
+			double average = service.listAccounts()
+			.stream()
+			.filter(account -> account.getClient().getName().equals(client.getName()))
+			.mapToDouble(account -> account.getBalance())
+			.average()
+			.orElse(0);
 
+
+			System.out.println(client.getName()+" - "+ average);
+		});
+	}
+		
 	/**
 	 * 3. Considerando que só existem os países "Brazil" e "United States", 
 	 * imprima na tela qual deles possui o cliente mais rico, ou seja,
 	 * com o maior saldo somando todas as suas contas.
 	 */
 	public static void imprimirPaisClienteMaisRico() {
+
+		OptionalDouble brazilAccounts = service.listAccounts()
+		.stream()
+		.filter(account -> account.getClient().getAddress().getCountry().equals("Brazil"))
+		.mapToDouble(account -> account.getBalance())
+		.max();
+
+		OptionalDouble usaAccounts = service.listAccounts()
+		.stream()
+		.filter(account -> account.getClient().getAddress().getCountry().equals("United States"))
+		.mapToDouble(account -> account.getBalance())
+		.max();
+
+		System.out.println("Saldo do cliente mais rico do Brazil: "+brazilAccounts.getAsDouble());
+		System.out.println("Saldo do cliente mais rico dos EUA: "+usaAccounts.getAsDouble());
+		System.out.println(Double.compare(brazilAccounts.getAsDouble() , usaAccounts.getAsDouble()));
 
 	}
 
@@ -73,14 +100,24 @@ public class Exercicios {
 	 * @param agency
 	 */
 	public static void imprimirSaldoMedio(int agency) {	
-	
+		double average = service.listAccounts().stream()
+		.filter(account -> account.getAgency() == agency)
+		.mapToDouble(account -> account.getBalance())
+		.average()
+		.getAsDouble();
+
+		System.out.println(average);
 	}
 
 	/**
 	 * 5. Imprime na tela o nome de todos os clientes que possuem conta poupança (tipo SAVING)
 	 */
 	public static void imprimirClientesComPoupanca() {
-		
+		service.listAccounts().stream()
+		.filter(account -> account.getType().equals("SAVING"))
+		.map(account -> account.getClient())
+		.distinct()
+		.forEach(System.out::println);
 	}
 
 	/**
