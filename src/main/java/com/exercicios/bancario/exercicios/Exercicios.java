@@ -2,8 +2,11 @@ package com.exercicios.bancario.exercicios;
 
 import java.util.List;
 import java.util.OptionalDouble;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import com.exercicios.bancario.entity.Account;
+import com.exercicios.bancario.entity.AccountEnum;
 import com.exercicios.bancario.entity.Client;
 import com.exercicios.bancario.mock.BankService;
 import com.exercicios.bancario.mock.ServiceFactory;
@@ -31,14 +34,14 @@ public class Exercicios {
 		// imprimirPaisClienteMaisRico();
 		// imprimirSaldoMedio(1);
 		// imprimirClientesComPoupanca();
-		//getEstadoClientes(1);
-		//getNumerosContas("Brazil");
-		//getMaiorSaldo("client4@bank.com");
-		//sacar(1, 1, 50);
-		//depositar("Brazil",50);
-		//transferir(1, 1, 1, 50); 
-		//getContasConjuntas();
-		//getSomaContasEstado("1");
+		// getEstadoClientes(5);
+		// getNumerosContas("Brazil");
+		// getMaiorSaldo("client4@bank.com");
+		// sacar(1, 1, 50);
+		// depositar("Brazil",50);
+		// transferir(1, 1, 1, 50); 
+		// getContasConjuntas();
+		// getSomaContasEstado("State 1");
 		//getEmailsClientesContasConjuntas();
 		//isPrimo(40);
 		//getFatorial(9);
@@ -114,8 +117,8 @@ public class Exercicios {
 	 */
 	public static void imprimirClientesComPoupanca() {
 		service.listAccounts().stream()
-		.filter(account -> account.getType().equals("SAVING"))
-		.map(account -> account.getClient())
+		.filter(account -> account.getType().equals(AccountEnum.SAVING))
+		.map(account -> account.getClient().getName())
 		.distinct()
 		.forEach(System.out::println);
 	}
@@ -126,7 +129,12 @@ public class Exercicios {
 	 * @return Retorna uma lista de Strings com o "estado" de todos os clientes da agência
 	 */
 	public static List<String> getEstadoClientes(int agency) {
-		List<String> stateOfAllClients =  null;
+
+		List<String> stateOfAllClients = service.listAccounts().stream()
+		.filter(account -> account.getAgency() == (agency))
+		.map(account -> account.getClient().getAddress().getState())
+		.collect(Collectors.toList());
+
 		return (List<String>) stateOfAllClients;
 	}
 
@@ -136,7 +144,11 @@ public class Exercicios {
 	 * @return Retorna uma lista de inteiros com os números das contas daquele país
 	 */
 	public static int[] getNumerosContas(String country) {
-		int [] countryNumbers = null;
+		int [] countryNumbers = service.listAccounts().stream()
+		.filter(account -> account.getClient().getAddress().getCountry().equals(country))
+		.mapToInt(account -> account.getNumber())
+		.toArray();
+		
 		return (int[]) countryNumbers;
 	}
 
@@ -147,7 +159,11 @@ public class Exercicios {
 	 * @return
 	 */
 	public static double getMaiorSaldo(String clientEmail) {
-		double sumBalance = 0;
+		double sumBalance = service.listAccounts().stream()
+		.filter(account -> account.getClient().getEmail().equals(clientEmail))
+		.mapToDouble(account -> account.getBalance())
+		.sum();
+
 		return sumBalance;
 	}
 
@@ -159,7 +175,10 @@ public class Exercicios {
 	 * @param value
 	 */
 	public static void sacar(int agency, int number, double value) {
-		
+
+		service.listAccounts().stream()
+		.filter(account->account.getAgency() == agency && account.getNumber() == number)
+		.mapToDouble(account -> account.getBalance() - value);
 	}
 
 	/**
@@ -168,7 +187,9 @@ public class Exercicios {
 	 * @param value
 	 */
 	public static void depositar(String country, double value) {
-
+		service.listAccounts().stream()
+		.filter(account -> account.getClient().getAddress().getCountry().equals(country))
+		.mapToDouble(account -> account.getBalance() + value);
 	}
 
 	/**
@@ -179,7 +200,13 @@ public class Exercicios {
 	 * @param value - valor da transferência
 	 */
 	public static void transferir(int agency, int numberSource, int numberTarget, double value) {
-		
+		service.listAccounts().stream()
+		.filter(account->account.getAgency() == agency && account.getNumber() == numberSource)
+		.mapToDouble(account -> account.getBalance() - value);
+
+		service.listAccounts().stream()
+		.filter(account->account.getAgency() == agency && account.getNumber() == numberTarget)
+		.mapToDouble(account -> account.getBalance() + value);
 	}
 
 	/**
@@ -187,8 +214,10 @@ public class Exercicios {
 	 * @param clients
 	 * @return Retorna uma lista com todas as contas conjuntas (JOINT) dos clientes
 	 */
-	public static List<Account> getContasConjuntas(List<Client> clients) {
-		List<Account> jointAccounts = null;
+	public static List<Account> getContasConjuntas() {
+		List<Account> jointAccounts = service.listAccounts().stream()
+		.filter(account -> account.getType().equals(AccountEnum.JOINT)).toList();
+
 		return jointAccounts;
 	}
 
@@ -198,7 +227,14 @@ public class Exercicios {
 	 * @return Retorna uma lista com o somatório dos saldos de todas as contas do estado 
 	 */
 	public static double getSomaContasEstado(String state) {
-		double sumAccountState = 0;
+
+		double sumAccountState = service.listAccounts().stream()
+		.filter(account -> account.getClient().getAddress().getState().equals(state))
+		.mapToDouble(account -> account.getBalance())
+		.sum();
+
+		System.out.println(sumAccountState);
+
 		return sumAccountState;
 	}
 
